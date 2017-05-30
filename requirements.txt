@@ -9,7 +9,6 @@ future==0.16.0
 hupper==1.0
 ipython==6.0.0
 ipython-genutils==0.2.0
-learning_journal==0.0
 jedi==0.10.2
 Jinja2==2.9.6
 jinja2-time==0.2.0
