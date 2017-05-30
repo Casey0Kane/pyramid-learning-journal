@@ -1,0 +1,6 @@
+[run]
+source = learning_journal
+omit = 
+    learning_journal/test*
+
+show_missing = True
