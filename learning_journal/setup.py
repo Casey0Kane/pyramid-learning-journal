@@ -18,7 +18,8 @@ requires = [
     'zope.sqlalchemy',
     'waitress',
     'ipython',
-    'pyramid_ipython'
+    'pyramid_ipython',
+    'tox',
 ]
 
 tests_require = [
@@ -31,7 +32,7 @@ tests_require = [
 setup(
     name='pyramid_learning_journal',
     version='0.0',
-    description='Ely_Learning_Journal',
+    description='Caseys learning journal',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
         'Programming Language :: Python',
