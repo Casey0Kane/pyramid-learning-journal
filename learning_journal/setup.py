@@ -17,22 +17,21 @@ requires = [
     'transaction',
     'zope.sqlalchemy',
     'waitress',
-    'tox',
     'ipython',
-    'pyramid_ipython',
+    'pyramid_ipython'
 ]
 
 tests_require = [
     'WebTest >= 1.3.1',  # py3 compat
     'pytest',
     'pytest-cov',
-    'tox',
+    'tox'
 ]
 
 setup(
-    name='learning_journal',
+    name='pyramid_learning_journal',
     version='0.0',
-    description='Learning Journal',
+    description='Ely_Learning_Journal',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
         'Programming Language :: Python',
@@ -53,10 +52,10 @@ setup(
     install_requires=requires,
     entry_points={
         'paste.app_factory': [
-            'main = learning_journal:main',
+            'main = pyramid_learning_journal:main',
         ],
         'console_scripts': [
-            'initialize_learning_journal_db = learning_journal.scripts.initializedb:main',
+            'initialize_pyramid_learning_journal_db = pyramid_learning_journal.scripts.initializedb:main',
         ],
     },
 )
