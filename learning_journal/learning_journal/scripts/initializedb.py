@@ -68,4 +68,4 @@ def main(argv=sys.argv):
                           body=entry['body'],
                           creation_date=entry['creation_date'],
                           id=entry['id'])
-            dbsession.add(model)
+            dbsession.add_all(model)
