@@ -19,7 +19,7 @@ requires = [
     'waitress',
     'ipython',
     'pyramid_ipython',
-    'tox',
+    'psycopg2',
 ]
 
 tests_require = [
@@ -51,12 +51,10 @@ setup(
         'testing': tests_require,
     },
     install_requires=requires,
-    entry_points={
-        'paste.app_factory': [
-            'main = pyramid_learning_journal:main',
-        ],
-        'console_scripts': [
-            'initialize_pyramid_learning_journal_db = pyramid_learning_journal.scripts.initializedb:main',
-        ],
-    },
+    entry_points="""\
+      [paste.app_factory]
+      main = learning_journal:main
+      [console_scripts]
+      initializedb = learning_journal.scripts.initializedb:main
+      """,
 )

@@ -1,31 +1,61 @@
-from pyramid import testing
-# from learning_journal.data import JOURNALS
 import pytest
+from pyramid import testing
 
 
 @pytest.fixture
-def list_view_response():
-    """Return a response for a home page."""
-    from learning_journal.views.default import list_view
-    request = testing.DummyRequest()
-    response = list_view(request)
+def req():
+    """Return dummy request."""
+    req = testing.DummyRequest()
+    return req
+
+
+@pytest.fixture
+def testapp():
+    """Return mock app."""
+    from webtest import TestApp
+    from learning_journal import main
+    app = main({})
+    return TestApp(app)
+
+
+@pytest.fixture(params=['/',
+                        '/journal/2',
+                        '/journal/new-entry',
+                        '/journal/2/edit-entry'])
+def test_response(request):
+    """Return test responses."""
+    from webtest import TestApp
+    from learning_journal import main
+    app = main({})
+    testapp = TestApp(app)
+    response = testapp.get(request.param, status=200)
     return response
 
 
-# def test_detail_view_with_id_returns_one_journal():
-#     """."""
-#     from learning_journal.views.default import detail_view
-#     req = testing.DummyRequest()
-#     req.matchdict['id'] = '1'
-#     response = detail_view(req)
-#     assert response['journals'] == JOURNALS[1]
+def test_home_view_renders_home_data(req):
+    """My home page view returns dictionary."""
+    from .views.default import home_view
+    response = home_view(req)
+    assert 'latest' in response
+    assert 'left_entries' in response
+    assert 'right_entries' in response
 
 
-# def test_list_view_returns_response_given_request(list_view_response):
-#     """Home view returns a response object when given a request."""
-#     assert isinstance(list_view_response, Response)
+def test_home_has_iterables(req):
+    """Test home view response returns iterable(dictionary)."""
+    from .views.default import home_view
+    response = home_view(req)
+    assert hasattr(response['left_entries'], '__iter__')
+    assert hasattr(response['right_entries'], '__iter__')
 
 
-# def test_list_view_is_good(list_view_response):
-#     """Test that the home view is 200 response OK."""
-#     assert list_view_response.status_code == 200
+def test_home_has_list(testapp):
+    response = testapp.get('/', status=200)
+    inner_html = response.html
+    assert str(inner_html).count('div class="one-half column"') == 2
+
+
+def test_home_css_links(test_response):
+    inner_html = test_response.html
+    print(inner_html)
+    assert str(inner_html).count('text/css') == 3
