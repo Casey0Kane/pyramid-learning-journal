@@ -1,11 +1,12 @@
 import os
 import sys
 import transaction
+from datetime import datetime
 
 from pyramid.paster import (
     get_appsettings,
     setup_logging,
-    )
+)
 
 from pyramid.scripts.common import parse_vars
 
@@ -14,8 +15,30 @@ from ..models import (
     get_engine,
     get_session_factory,
     get_tm_session,
-    )
-from ..models import MyModel
+)
+from ..models import Entry
+
+
+ENTRIES = [
+    {
+        "id": 0,
+        "title": "Test",
+        "body": "Isn't sql just so much fun?",
+        "creation_date": datetime.strptime("May 30, 2017", "%b %d, %Y")
+    },
+    {
+        "id": 1,
+        "title": "Another test",
+        "body": "Don't forget jinja!",
+        "creation_date": datetime.strptime("May 31, 2017", "%b %d, %Y")
+    },
+    {
+        "id": 2,
+        "title": "Stupid bugs",
+        "body": "Why are you so complicated?",
+        "creation_date": datetime.strptime("Jun 1, 2017", "%b %d, %Y")
+    },
+]
 
 
 def usage(argv):
@@ -40,6 +63,9 @@ def main(argv=sys.argv):
 
     with transaction.manager:
         dbsession = get_tm_session(session_factory, transaction.manager)
-
-        model = MyModel(name='one', value=1)
-        dbsession.add(model)
+        for entry in ENTRIES:
+            model = Entry(title=entry['title'],
+                          body=entry['body'],
+                          creation_date=entry['creation_date'],
+                          id=entry['id'])
+            dbsession.add_all(model)

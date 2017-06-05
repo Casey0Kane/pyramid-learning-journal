@@ -1,36 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Casey O'Kane's learning journal</title>
-    <link rel="stylesheet" type="text/css" href="../static/style.css">
-</head>
-<body>
-    <div class="header">
-        <div class="row">
-            <header>
-                <ul>
-                    <li><a href=""><h3>Today I learned ...</h3></a></li>
-                    <li id="addnewentry"><a href="/journal/new-entry">Add new entry</a></li>
-                </ul>
-            </header>
-        </div>
+{% extends "layout.jinja2" %}
+{% macro lj_entry(entry) %}
+<div class="row">
+    <article>
+        <h6 class="date">{{ entry.creation_date }}</h6>
+        {% if entry.edit_date %}
+            <h6 class="date edited">(<em>edited: </em>{{ entry.edit_date }})</h6>
+        {% endif %}
+        <a href="{{ request.route_url('detail', id=entry.id) }}"><h4>{{ entry.title }}</h4></a>
+    </article>
+</div>
+{% endmacro %}}
+{% block title %}
+today I learned...
+{% endblock %}
+{% block body %}
+<div class="entries container">
+    {{ lj_entry(latest) }}
+    <div class="one-half column">
+        {% for entry in left_entries %}
+            {{ lj_entry(entry) }}
+        {% endfor %}
     </div>
-    <div class="entries">
-        <div class="row">
-            <div class="entry-column">
-                <article>
-                    <h4 class="date">May 30, 2017</h4>
-                    <a href="/journal/entry1"><h4>entry1</h4></a>
-                </article>
-            </div>
-            <div class="entry-column">
-                <article>
-                    <h4 class="date">May 31, 2017</h4>
-                    <a href="/journal/entry2"><h4>entry2</h4></a>
-                </article>
-            </div>
-        </div>
+    <div class="one-half column">
+        {% for entry in right_entries %}
+            {{ lj_entry(entry) }}
+        {% endfor %}
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

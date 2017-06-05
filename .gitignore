@@ -100,3 +100,4 @@ lj
 
 # mypy
 .mypy_cache/
+*.sqlite
