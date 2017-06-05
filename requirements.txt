@@ -7,6 +7,8 @@ click==6.7
 cookiecutter==1.5.1
 coverage==4.4.1
 decorator==4.0.11
+fake-factory==9999.9.9
+Faker==0.7.15
 future==0.16.0
 hupper==1.0
 ipython==6.0.0
@@ -14,6 +16,7 @@ ipython-genutils==0.2.0
 jedi==0.10.2
 Jinja2==2.9.6
 jinja2-time==0.2.0
+learning-journal==0.0
 Mako==1.0.6
 MarkupSafe==1.0
 PasteDeploy==1.5.2

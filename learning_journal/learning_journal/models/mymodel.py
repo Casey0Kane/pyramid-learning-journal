@@ -1,6 +1,5 @@
 from sqlalchemy import (
     Column,
-    Index,
     Integer,
     Unicode,
     Date
@@ -15,3 +14,4 @@ class Entry(Base):
     title = Column(Unicode)
     body = Column(Unicode)
     creation_date = Column(Date)
+    edit_date = Column(Date)

@@ -1,61 +1,251 @@
 import pytest
+import transaction
+from .models import Entry, get_tm_session
+from pyramid.httpexceptions import HTTPFound, HTTPNotFound
+from zope.interface.interfaces import ComponentLookupError
+from .models.meta import Base
 from pyramid import testing
+import faker
+import datetime
+
+
+fake = faker.Faker()
+
+ENTRIES = [Entry(
+    title=fake.catch_phrase(),
+    body=fake.paragraph(),
+    creation_date=fake.date_object(),
+    edit_date=fake.date_object()
+) for i in range(99)] + [Entry(
+    title="Test",
+    body='Sample body',
+    creation_date=fake.date_object()
+)]
+
+
+ROUTES = ['/',
+          '/journal/new-entry',
+          '/journal/1',
+          '/journal/1/edit-entry']
+
+
+@pytest.fixture(scope="session")
+def configuration(request):
+    """Return config for a db_session."""
+    settings = {'sqlalchemy.url': 'postgres://localhost:5432/learning_journal'}
+    config = testing.setUp(settings=settings)
+    config.include('learning_journal.models')
+
+    def teardown():
+        testing.tearDown()
+
+    request.addfinalizer(teardown)
+    return config
 
 
 @pytest.fixture
-def req():
-    """Return dummy request."""
-    req = testing.DummyRequest()
-    return req
+def db_session(configuration, request):
+    """Return a db_session."""
+    session_factory = configuration.registry['dbsession_factory']
+    session = session_factory()
+    engine = session.bind
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+
+    def teardown():
+        session.transaction.rollback()
+
+    request.addfinalizer(teardown)
+    return session
+
+
+@pytest.fixture
+def dummy_request(db_session):
+    """."""
+    return testing.DummyRequest(dbsession=db_session)
+
+
+@pytest.fixture
+def add_models(dummy_request):
+    """."""
+    dummy_request.dbsession.add_all(ENTRIES)
+
+
+# Unit Tests #
+
+
+def test_entries_are_added(db_session):
+    """Test all entries are added to database."""
+    db_session.add_all(ENTRIES)
+    query = db_session.query(Entry).all()
+    assert len(query) == len(ENTRIES)
+
+
+def test_home_view_filled(dummy_request, add_models):
+    """Test home_view returns all entries."""
+    from .views.default import home_view
+    res = home_view(dummy_request)
+    entries = res['left_entries'] + res['right_entries'] + [res['latest']]
+    assert len(entries) == len(ENTRIES)
+
+
+def test_detail_view(dummy_request, add_models):
+    """Test detail page for first entry."""
+    from .views.default import detail_view
+    dummy_request.matchdict['id'] = 1
+    res = detail_view(dummy_request)
+    assert res['entry'].title == ENTRIES[0].title
+
+
+def test_detail_view_not_found(dummy_request):
+    """Test 404 not found for detail."""
+    from .views.default import detail_view
+    dummy_request.matchdict['id'] = 1
+    with pytest.raises(Exception):
+        detail_view(dummy_request)
+
+
+def test_update_view(dummy_request, add_models):
+    """."""
+    from .views.default import update_view
+    dummy_request.matchdict['id'] = 1
+    res = update_view(dummy_request)
+    assert res['title'] == ENTRIES[0].title
+    assert res['body'] == ENTRIES[0].body
+
+
+def test_update_view_not_found(dummy_request):
+    """Test update view for a non-existant entry."""
+    from .views.default import update_view
+    dummy_request.matchdict['id'] = 1
+    with pytest.raises(Exception):
+        update_view(dummy_request)
+
+
+def test_update_view_post(dummy_request, add_models):
+    """Test ability to update db."""
+    from .views.default import update_view
+    dummy_request.matchdict['id'] = 2
+    dummy_request.method = 'POST'
+    dummy_request.POST['title'] = 'test'
+    dummy_request.POST['body'] = 'oh yes test'
+    try:
+        update_view(dummy_request)
+    except ComponentLookupError:
+        pass
+    entry = dummy_request.dbsession.query(Entry).get(2)
+    assert entry.title == 'test'
+    assert entry.body == 'oh yes test'
+
+
+def test_create_view_get(dummy_request):
+    """Test create view initial get."""
+    from .views.default import create_view
+    res = create_view(dummy_request)
+    assert type(res['creation_date']) is datetime.date
+
+
+def test_create_view_post(dummy_request):
+    """Test create view form submission adds to db."""
+    from .views.default import create_view
+    dummy_request.method = 'POST'
+    dummy_request.POST['title'] = 'Tester'
+    dummy_request.POST['body'] = 'test test test'
+    dummy_request.POST['creation_date'] = '2020-01-01'
+    try:
+        create_view(dummy_request)
+    except ComponentLookupError:
+        pass
+    entry = dummy_request.dbsession.query(Entry).first()
+    assert entry.title == 'Tester'
+    assert entry.body == 'test test test'
+    assert 'datetime' in str(type(entry.creation_date))
+
+
+# Functional Tests #
 
 
 @pytest.fixture
 def testapp():
     """Return mock app."""
     from webtest import TestApp
-    from learning_journal import main
-    app = main({})
-    return TestApp(app)
+    from pyramid.config import Configurator
 
+    def main(global_config, **settings):
+        """The function returns a Pyramid WSGI application."""
+        config = Configurator(settings=settings)
+        config.include('pyramid_jinja2')
+        config.include('learning_journal.models')
+        config.include('learning_journal.routes')
+        config.scan()
+        return config.make_wsgi_app()
 
-@pytest.fixture(params=['/',
-                        '/journal/2',
-                        '/journal/new-entry',
-                        '/journal/2/edit-entry'])
-def test_response(request):
-    """Return test responses."""
-    from webtest import TestApp
-    from learning_journal import main
-    app = main({})
+    app = main({}, **{"sqlalchemy.url": "postgres://localhost:5432/learning_journal"})
     testapp = TestApp(app)
-    response = testapp.get(request.param, status=200)
-    return response
+    session_factory = app.registry["dbsession_factory"]
+    engine = session_factory().bind
+    Base.metadata.create_all(bind=engine)
+
+    return testapp
 
 
-def test_home_view_renders_home_data(req):
-    """My home page view returns dictionary."""
-    from .views.default import home_view
-    response = home_view(req)
-    assert 'latest' in response
-    assert 'left_entries' in response
-    assert 'right_entries' in response
+@pytest.fixture
+def fill_db(testapp):
+    session_factory = testapp.app.registry["dbsession_factory"]
+    with transaction.manager:
+        dbsession = get_tm_session(session_factory, transaction.manager)
+        dbsession.add_all(ENTRIES)
 
 
-def test_home_has_iterables(req):
-    """Test home view response returns iterable(dictionary)."""
-    from .views.default import home_view
-    response = home_view(req)
-    assert hasattr(response['left_entries'], '__iter__')
-    assert hasattr(response['right_entries'], '__iter__')
+@pytest.mark.parametrize("route", ROUTES)
+def test_view_css_links(route, testapp, fill_db):
+    """Test css links."""
+    response = testapp.get(route, status=200)
+    assert str(response.html).count('text/css') == 1
 
 
 def test_home_has_list(testapp):
     response = testapp.get('/', status=200)
-    inner_html = response.html
-    assert str(inner_html).count('div class="one-half column"') == 2
+    assert str(response.html).count('div class="one-half column"') == 2
 
 
-def test_home_css_links(test_response):
-    inner_html = test_response.html
-    print(inner_html)
-    assert str(inner_html).count('text/css') == 3
+def test_home_route_with_data_has_all_articles(testapp, fill_db):
+    """Test all articles are rendered."""
+    response = testapp.get('/', status=200)
+    assert len(response.html.find_all('article')) == 100
+
+
+def test_detail_page(testapp, fill_db):
+    """Test detail page renders correctly."""
+    response = testapp.get('/journal/100', status=200).html
+    assert response.find('h4').text == 'Tester'
+    assert response.find('p').text == 'test test test'
+
+
+@pytest.mark.parametrize('route', ['/journal/1032', '/journal/1032/edit-entry'])
+def test_detail_and_update_page_404_redirect(route, testapp):
+    """Test detail page redirects to 404 page if entry doesn't exist."""
+    response = testapp.get(route, status=404).html.find_all('p')
+    assert response[0].text == '404'
+
+
+def test_update_page_redirect(testapp, fill_db):
+    """Test update page redirects to detail view."""
+    post_params = {
+        'title': 'Snooze',
+        'body': 'here it comes'
+    }
+    response = testapp.post('/journal/1/edit-entry', post_params).follow()
+    assert response.html.find('h4').text == 'Snooze'
+    assert response.html.find('p').text == 'here it comes'
+
+
+def test_create_page_redirect(testapp, fill_db):
+    """Test create page redirects to home."""
+    post_params = {
+        'title': 'golden gun',
+        'body': 'the man with it',
+        'creation_date': '2020-01-01'
+    }
+    response = testapp.post('/journal/new-entry', post_params)
+    assert response.html.find('article').find('h4').text == 'golden gun'
