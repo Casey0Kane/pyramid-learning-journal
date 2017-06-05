@@ -1,18 +1,17 @@
 """Views for the Learning Journal application."""
 from pyramid.view import view_config
-from pyramid.httpexceptions import HTTPFound
-from datetime import date as Date
-
+from pyramid.httpexceptions import HTTPFound, HTTPNotFound
+from datetime import date, datetime
 from ..models import Entry
 
 
 @view_config(route_name='home', renderer='../templates/index.jinja2')
 def home_view(request):
-    """Grab homepage data use jinja."""
-    entries = request.dbsession.query(Entry).order_by(Entry.id).all()
-    latest = entries[-1]
+    """Grab homepage data using jinja."""
+    entries = request.dbsession.query(Entry).order_by(Entry.id).all()[::-1]
+    latest = entries[0] if entries else ""
     left_entries, right_entries = [], []
-    for i in range(len(entries) - 1):
+    for i in range(1, len(entries)):
         if i % 2:
             left_entries.append(entries[i])
         else:
@@ -25,25 +24,28 @@ def home_view(request):
 @view_config(route_name='detail', renderer='../templates/entry.jinja2')
 def detail_view(request):
     """Entry for learning journal."""
-    e = request.dbsession.query(Entry).filter_by(
-        id=request.matchdict['id']).first()
-    return {'title': e.title, 'body': e.body, 'id': e.id, 'creation_date': e.creation_date}
+    e = request.dbsession.query(Entry).get(int(request.matchdict['id']))
+    if not e:
+        raise HTTPNotFound(detail="Entry does not exist.")
+    edit_date = None
+    if e.edit_date:
+        edit_date = e.edit_date.strftime("%b %d, %Y")
+    return {'entry': e, 'edit_date': edit_date}
 
 
 @view_config(route_name='update', renderer='../templates/edit-entry.jinja2')
 def update_view(request):
     """Edit learning journal entry."""
+    e = request.dbsession.query(Entry).get(int(request.matchdict['id']))
+    if not e:
+        raise HTTPNotFound(detail="You cannot edit that which does not exist")
     if request.method == "POST":
-        entry = request.dbsession.query(Entry).filter_by(
-            id=request.matchdict['id']).first()
-        entry.title = request.POST['title']
-        entry.body = request.POST['body']
-        today = Date.today()
-        entry.edit_date = today
-        return HTTPFound(location=request.route_url('home'))
+        e.title = request.POST['title']
+        e.body = request.POST['body']
+        e.edit_date = date.today()
+        request.dbsession.flush()
+        return HTTPFound(location=request.route_url('detail', id=e.id),)
     if request.method == "GET":
-        e = request.dbsession.query(Entry).filter_by(
-            id=request.matchdict['id']).first()
         return {'title': e.title, 'body': e.body}
 
 
@@ -53,13 +55,13 @@ def create_view(request):
     if request.method == "POST":
         title = request.POST['title']
         body = request.POST['body']
-        creation_date = request.POST['creation_date']
+        creation_date = datetime.strptime(request.POST['creation_date'], "%Y-%m-%d")
         entry = Entry(title=title, body=body, creation_date=creation_date)
         request.dbsession.add(entry)
         return HTTPFound(location=request.route_url('home'))
     if request.method == "GET":
-        today = Date.today()
-        return {"creation_date": "{}-{}-{}".format(today.year, today.month, today.day)}
+        today = date.today()
+        return {"creation_date": today}
 
 
 db_err_msg = """\

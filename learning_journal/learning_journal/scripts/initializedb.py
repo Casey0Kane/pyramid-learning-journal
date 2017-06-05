@@ -2,12 +2,10 @@ import os
 import sys
 import transaction
 from datetime import datetime
-
 from pyramid.paster import (
     get_appsettings,
     setup_logging,
 )
-
 from pyramid.scripts.common import parse_vars
 
 from ..models.meta import Base
@@ -17,26 +15,23 @@ from ..models import (
     get_tm_session,
 )
 from ..models import Entry
+import faker
 
 
-ENTRIES = [
+fake = faker.Faker()
+
+ENTRIES = [{
+    "title": fake.catch_phrase(),
+    "body": fake.paragraph(),
+    "creation_date": fake.date_object()
+} for i in range(10)]
+
+
+ENTRIES += [
     {
-        "id": 0,
-        "title": "Test",
-        "body": "Isn't sql just so much fun?",
-        "creation_date": datetime.strptime("May 30, 2017", "%b %d, %Y")
-    },
-    {
-        "id": 1,
-        "title": "Another test",
-        "body": "Don't forget jinja!",
-        "creation_date": datetime.strptime("May 31, 2017", "%b %d, %Y")
-    },
-    {
-        "id": 2,
-        "title": "Stupid bugs",
-        "body": "Why are you so complicated?",
-        "creation_date": datetime.strptime("Jun 1, 2017", "%b %d, %Y")
+        "title": "TESTING",
+        "body": "Test body",
+        "creation_date": datetime.strptime("Jun 02, 2017", "%b %d, %Y")
     },
 ]
 
@@ -55,8 +50,9 @@ def main(argv=sys.argv):
     options = parse_vars(argv[2:])
     setup_logging(config_uri)
     settings = get_appsettings(config_uri, options=options)
-
+    settings["sqlalchemy.url"] = os.environ["DATABASE_URL"]
     engine = get_engine(settings)
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
     session_factory = get_session_factory(engine)
@@ -66,6 +62,5 @@ def main(argv=sys.argv):
         for entry in ENTRIES:
             model = Entry(title=entry['title'],
                           body=entry['body'],
-                          creation_date=entry['creation_date'],
-                          id=entry['id'])
-            dbsession.add_all(model)
+                          creation_date=entry['creation_date'])
+        dbsession.add(model)

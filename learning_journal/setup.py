@@ -26,7 +26,9 @@ tests_require = [
     'WebTest >= 1.3.1',  # py3 compat
     'pytest',
     'pytest-cov',
-    'tox'
+    'tox',
+    'faker',
+    'testing.postgresql'
 ]
 
 setup(
@@ -43,7 +45,7 @@ setup(
     author='',
     author_email='',
     url='',
-    keywords='web pyramid pylons',
+    keywords='web wsgi pyramid pylons',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
