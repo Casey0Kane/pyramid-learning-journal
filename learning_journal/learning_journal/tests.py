@@ -61,13 +61,13 @@ def db_session(configuration, request):
 
 @pytest.fixture
 def dummy_request(db_session):
-    """."""
+    """Test dummy request fixture."""
     return testing.DummyRequest(dbsession=db_session)
 
 
 @pytest.fixture
 def add_models(dummy_request):
-    """."""
+    """Add models to dummy request."""
     dummy_request.dbsession.add_all(ENTRIES)
 
 
@@ -106,7 +106,7 @@ def test_detail_view_not_found(dummy_request):
 
 
 def test_update_view(dummy_request, add_models):
-    """."""
+    """Test update view has dummy request."""
     from .views.default import update_view
     dummy_request.matchdict['id'] = 1
     res = update_view(dummy_request)
@@ -191,6 +191,7 @@ def testapp():
 
 @pytest.fixture
 def fill_db(testapp):
+    """Fill database."""
     session_factory = testapp.app.registry["dbsession_factory"]
     with transaction.manager:
         dbsession = get_tm_session(session_factory, transaction.manager)
@@ -205,6 +206,7 @@ def test_view_css_links(route, testapp, fill_db):
 
 
 def test_home_has_list(testapp):
+    """Test home view has list."""
     response = testapp.get('/', status=200)
     assert str(response.html).count('div class="one-half column"') == 2
 
