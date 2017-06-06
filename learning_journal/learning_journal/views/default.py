@@ -23,7 +23,7 @@ def home_view(request):
             'right_entries': right_entries}
 
 
-@view_config(route_name='detail', renderer='../templates/entry.jinja2')
+@view_config(route_name='detail', renderer='../templates/detail.jinja2')
 def detail_view(request):
     """Entry for learning journal."""
     e = request.dbsession.query(Entry).get(int(request.matchdict['id']))
