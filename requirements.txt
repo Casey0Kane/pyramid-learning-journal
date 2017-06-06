@@ -56,3 +56,4 @@ whichcraft==0.4.1
 zope.deprecation==4.2.0
 zope.interface==4.4.1
 zope.sqlalchemy==0.7.7
+learning_journal==0.0
