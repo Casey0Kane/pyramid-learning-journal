@@ -20,6 +20,7 @@ requires = [
     'ipython',
     'pyramid_ipython',
     'psycopg2',
+    'passlib',
 ]
 
 tests_require = [
@@ -53,10 +54,13 @@ setup(
         'testing': tests_require,
     },
     install_requires=requires,
-    entry_points="""\
-      [paste.app_factory]
-      main = learning_journal:main
-      [console_scripts]
-      initializedb = learning_journal.scripts.initializedb:main
-      """,
+    entry_points={
+        'paste.app_factory': [
+            'main = learning_journal:main'
+        ],
+        'console_scripts': [
+            'initializedb=learning_journal.scripts.initializedb:main'
+        ],
+    },
+
 )

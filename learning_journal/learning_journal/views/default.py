@@ -3,6 +3,8 @@ from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 from datetime import date, datetime
 from ..models import Entry
+from pyramid.security import remember, forget
+from learning_journal.security import check_credentials
 
 
 @view_config(route_name='home', renderer='../templates/index.jinja2')
@@ -33,7 +35,7 @@ def detail_view(request):
     return {'entry': e, 'edit_date': edit_date}
 
 
-@view_config(route_name='update', renderer='../templates/edit-entry.jinja2')
+@view_config(route_name='update', renderer='../templates/edit-entry.jinja2', permission='secret')
 def update_view(request):
     """Edit learning journal entry."""
     e = request.dbsession.query(Entry).get(int(request.matchdict['id']))
@@ -49,7 +51,7 @@ def update_view(request):
         return {'title': e.title, 'body': e.body}
 
 
-@view_config(route_name='create', renderer='../templates/new-entry.jinja2')
+@view_config(route_name='create', renderer='../templates/new-entry.jinja2', permission='secret')
 def create_view(request):
     """Create learning journal entry."""
     if request.method == "POST":
@@ -62,6 +64,27 @@ def create_view(request):
     if request.method == "GET":
         today = date.today()
         return {"creation_date": today}
+
+
+@view_config(route_name='login', renderer='../templates/login.jinja2')
+def login(request):
+    """View for logging in as a user."""
+    if request.method == "GET":
+        return {}
+    if request.method == "POST":
+        username = request.POST['username']
+        password = request.POST['password']
+        if check_credentials(username, password):
+            headers = remember(request, username)
+            return HTTPFound(location=request.route_url('home'), headers=headers)
+        return {'error': 'Invalid Username or Password.'}
+
+
+@view_config(route_name='logout')
+def logout(request):
+    """Logout and forget username."""
+    headers = forget(request)
+    return HTTPFound(request.route_url('home'), headers=headers)
 
 
 db_err_msg = """\
