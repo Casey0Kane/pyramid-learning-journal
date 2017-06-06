@@ -33,7 +33,7 @@ tests_require = [
 ]
 
 setup(
-    name='pyramid_learning_journal',
+    name='pyramid-learning-journal',
     version='0.0',
     description='Caseys learning journal',
     long_description=README + '\n\n' + CHANGES,
