@@ -7,7 +7,7 @@ from pyramid.security import remember, forget
 from learning_journal.security import check_credentials
 
 
-@view_config(route_name='home', renderer='../templates/index.jinja2')
+@view_config(route_name='home', renderer='../templates/index.jinja2', require_csrf=False)
 def home_view(request):
     """Grab homepage data using jinja."""
     entries = request.dbsession.query(Entry).order_by(Entry.id).all()[::-1]
@@ -23,7 +23,7 @@ def home_view(request):
             'right_entries': right_entries}
 
 
-@view_config(route_name='detail', renderer='../templates/detail.jinja2')
+@view_config(route_name='detail', renderer='../templates/detail.jinja2', require_csrf=False)
 def detail_view(request):
     """Entry for learning journal."""
     e = request.dbsession.query(Entry).get(int(request.matchdict['id']))
@@ -35,7 +35,7 @@ def detail_view(request):
     return {'entry': e, 'edit_date': edit_date}
 
 
-@view_config(route_name='update', renderer='../templates/edit-entry.jinja2', permission='secret')
+@view_config(route_name='update', renderer='../templates/edit-entry.jinja2', permission='secret', require_csrf=True)
 def update_view(request):
     """Edit learning journal entry."""
     e = request.dbsession.query(Entry).get(int(request.matchdict['id']))
@@ -51,7 +51,7 @@ def update_view(request):
         return {'title': e.title, 'body': e.body}
 
 
-@view_config(route_name='create', renderer='../templates/new-entry.jinja2', permission='secret')
+@view_config(route_name='create', renderer='../templates/new-entry.jinja2', permission='secret', require_csrf=True)
 def create_view(request):
     """Create learning journal entry."""
     if request.method == "POST":
@@ -66,7 +66,7 @@ def create_view(request):
         return {"creation_date": today}
 
 
-@view_config(route_name='login', renderer='../templates/login.jinja2')
+@view_config(route_name='login', renderer='../templates/login.jinja2', require_csrf=False)
 def login(request):
     """View for logging in as a user."""
     if request.method == "GET":
@@ -80,7 +80,7 @@ def login(request):
         return {'error': 'Invalid Username or Password.'}
 
 
-@view_config(route_name='logout')
+@view_config(route_name='logout',require_csrf=False)
 def logout(request):
     """Logout and forget username."""
     headers = forget(request)
