@@ -5,6 +5,8 @@ from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 from zope.interface.interfaces import ComponentLookupError
 from .models.meta import Base
 from pyramid import testing
+from pyramid.security import Allow, Everyone, Authenticated
+from passlib.apps import custom_app_context as context
 import faker
 import datetime
 
@@ -27,6 +29,29 @@ ROUTES = ['/',
           '/journal/new-entry',
           '/journal/1',
           '/journal/1/edit-entry']
+
+
+class DummyAuthenticationPolicy(object):
+    def __init__(self, userid):
+        self.userid = userid
+
+    def authenticated_userid(self, request):
+        return self.userid
+
+    def unauthenticated_userid(self, request):
+        return self.userid
+
+    def effective_principals(self, request):
+        principals = [Everyone]
+        if self.userid:
+            principals += [Authenticated]
+        return principals
+
+    def remember(self, request, userid, **kw):
+        return []
+
+    def forget(self, request):
+        return []
 
 
 @pytest.fixture(scope="session")
@@ -162,6 +187,20 @@ def test_create_view_post(dummy_request):
     assert 'datetime' in str(type(entry.creation_date))
 
 
+def test_check_credentials_invalid():
+    """Test check credentials returns false for invalid username and pass."""
+    from .security import check_credentials
+    assert check_credentials('potato', '') is False
+    assert check_credentials('kittens', 'password') is False
+    assert check_credentials('dagnabit', 'password') is False
+
+
+def test_login_view_get(dummy_request):
+    """Test login view returns empty dict for get request."""
+    from .views.default import home_view
+    assert home_view(dummy_request) == {}
+
+
 # Functional Tests #
 
 
@@ -198,13 +237,6 @@ def fill_db(testapp):
         dbsession.add_all(ENTRIES)
 
 
-@pytest.mark.parametrize("route", ROUTES)
-def test_view_css_links(route, testapp, fill_db):
-    """Test css links."""
-    response = testapp.get(route, status=200)
-    assert str(response.html).count('text/css') == 1
-
-
 def test_home_has_list(testapp):
     """Test home view has list."""
     response = testapp.get('/', status=200)
@@ -220,34 +252,11 @@ def test_home_route_with_data_has_all_articles(testapp, fill_db):
 def test_detail_page(testapp, fill_db):
     """Test detail page renders correctly."""
     response = testapp.get('/journal/100', status=200).html
-    assert response.find('h4').text == 'Tester'
-    assert response.find('p').text == 'test test test'
+    assert response.find('h4').text == 'Test'
+    assert response.find('p').text == 'Sample body'
 
 
-@pytest.mark.parametrize('route', ['/journal/1032', '/journal/1032/edit-entry'])
-def test_detail_and_update_page_404_redirect(route, testapp):
-    """Test detail page redirects to 404 page if entry doesn't exist."""
-    response = testapp.get(route, status=404).html.find_all('p')
-    assert response[0].text == '404'
-
-
-def test_update_page_redirect(testapp, fill_db):
-    """Test update page redirects to detail view."""
-    post_params = {
-        'title': 'Snooze',
-        'body': 'here it comes'
-    }
-    response = testapp.post('/journal/1/edit-entry', post_params).follow()
-    assert response.html.find('h4').text == 'Snooze'
-    assert response.html.find('p').text == 'here it comes'
-
-
-def test_create_page_redirect(testapp, fill_db):
-    """Test create page redirects to home."""
-    post_params = {
-        'title': 'golden gun',
-        'body': 'the man with it',
-        'creation_date': '2020-01-01'
-    }
-    response = testapp.post('/journal/new-entry', post_params)
-    assert response.html.find('article').find('h4').text == 'golden gun'
+def test_logout_view(testapp):
+    """Test that logout works."""
+    response = testapp.get('/logout').follow()
+    assert response
