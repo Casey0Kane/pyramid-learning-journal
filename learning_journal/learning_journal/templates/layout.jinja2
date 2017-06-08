@@ -16,7 +16,6 @@
                 <ul>
                     <li><a href="{{ request.route_url('home') }}"><h3>Today I learned ...</h3></a></li>
                     {% if request.authenticated_userid %}
-                        <li class='right'><a href="{{ request.route_url('create') }}">Add new entry</a></li>
                         <li class='right'><a href="{{ request.route_url('logout') }}">logout</a></li>
                     {% else %}
                         <li class='right'><a href="{{ request.route_url('login') }}">login</a></li>
