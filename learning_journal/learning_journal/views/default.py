@@ -80,11 +80,19 @@ def login(request):
         return {'error': 'Invalid Username or Password.'}
 
 
-@view_config(route_name='logout',require_csrf=False)
+@view_config(route_name='logout', require_csrf=False)
 def logout(request):
     """Logout and forget username."""
     headers = forget(request)
     return HTTPFound(request.route_url('home'), headers=headers)
+
+
+@view_config(route_name="api_list", renderer="string")
+def api_list_view(request):
+    """Get the api list view."""
+    entry = request.dbsession.query(Entry).all()
+    output = [item.to_json() for item in entry]
+    return output
 
 
 db_err_msg = """\
