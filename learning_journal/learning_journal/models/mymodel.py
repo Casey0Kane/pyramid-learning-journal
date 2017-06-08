@@ -17,10 +17,10 @@ class Entry(Base):
     edit_date = Column(Date)
 
     def to_json(self):
-    return {
-        "id": self.id,
-        "title": self.title,
-        "body": self.body,
-        "creation_date": self.creation_date,
-        "edit_date": self.edit_date
-    }
+        return {
+            "id": self.id,
+            "title": self.title,
+            "body": self.body,
+            "creation_date": self.creation_date,
+            "edit_date": self.edit_date
+        }
