@@ -1,5 +1,6 @@
 import pytest
 import transaction
+import os
 from .models import Entry, get_tm_session
 from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 from zope.interface.interfaces import ComponentLookupError
@@ -8,6 +9,7 @@ from pyramid import testing
 from pyramid.security import Allow, Everyone, Authenticated
 from passlib.apps import custom_app_context as context
 import faker
+import contextlib
 import datetime
 
 
@@ -52,6 +54,17 @@ class DummyAuthenticationPolicy(object):
 
     def forget(self, request):
         return []
+
+
+@contextlib.contextmanager
+def set_env(**environ):
+    old_environ = dict(os.environ)
+    os.environ.update(environ)
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(old_environ)
 
 
 @pytest.fixture(scope="session")
@@ -195,7 +208,7 @@ def test_check_credentials_invalid():
     assert check_credentials('dagnabit', 'password') is False
 
 
-def test_login_view_get(dummy_request):
+def test_home_view_get(dummy_request):
     """Test login view returns empty dict for get request."""
     from .views.default import home_view
     assert home_view(dummy_request) == {}
@@ -216,6 +229,7 @@ def testapp():
         config.include('pyramid_jinja2')
         config.include('learning_journal.models')
         config.include('learning_journal.routes')
+        config.include('learning_journal.security')
         config.scan()
         return config.make_wsgi_app()
 
@@ -254,6 +268,30 @@ def test_detail_page(testapp, fill_db):
     response = testapp.get('/journal/100', status=200).html
     assert response.find('h4').text == 'Test'
     assert response.find('p').text == 'Sample body'
+
+
+@pytest.fixture(scope="function")
+def login(testapp):
+    """Authenticate testapp session."""
+    os.environ["AUTH_PASSWORD"] = context.hash('password')
+    os.environ["AUTH_USERNAME"] = 'Coffee'
+    post_params = {
+        'username': 'Coffee',
+        'password': 'password'
+    }
+    testapp.post('/login', post_params)
+
+
+def test_login_view_post(testapp, login):
+    """Test login view."""
+    pswrd = context.hash('password')
+    with set_env(AUTH_PASSWORD=pswrd):
+        post_params = {
+            'password': 'password',
+            'username': 'Coffee'
+        }
+        res = testapp.post('/login', post_params)
+        assert res.headers['Location'] == 'http://localhost/'
 
 
 def test_logout_view(testapp):

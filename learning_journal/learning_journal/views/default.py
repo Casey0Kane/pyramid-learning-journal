@@ -10,6 +10,13 @@ from learning_journal.security import check_credentials
 @view_config(route_name='home', renderer='../templates/index.jinja2', require_csrf=False)
 def home_view(request):
     """Grab homepage data using jinja."""
+    if request.method == "POST":
+        title = request.POST['title']
+        body = request.POST['body']
+        creation_date = datetime.strptime(request.POST['creation_date'], "%d-%m-%Y")
+        entry = Entry(title=title, body=body, creation_date=creation_date)
+        request.dbsession.add(entry)
+        return HTTPFound(location=request.route_url('home'))
     entries = request.dbsession.query(Entry).order_by(Entry.id).all()[::-1]
     latest = entries[0] if entries else ""
     left_entries, right_entries = [], []
@@ -20,7 +27,8 @@ def home_view(request):
             right_entries.append(entries[i])
     return {'latest': latest,
             'left_entries': left_entries,
-            'right_entries': right_entries}
+            'right_entries': right_entries,
+            "creation_date": date.today()}
 
 
 @view_config(route_name='detail', renderer='../templates/detail.jinja2', require_csrf=False)
@@ -80,11 +88,19 @@ def login(request):
         return {'error': 'Invalid Username or Password.'}
 
 
-@view_config(route_name='logout',require_csrf=False)
+@view_config(route_name='logout', require_csrf=False)
 def logout(request):
     """Logout and forget username."""
     headers = forget(request)
     return HTTPFound(request.route_url('home'), headers=headers)
+
+
+@view_config(route_name="api_list", renderer="string")
+def api_list_view(request):
+    """Get the api list view."""
+    entry = request.dbsession.query(Entry).all()
+    output = [item.to_json() for item in entry]
+    return output
 
 
 db_err_msg = """\

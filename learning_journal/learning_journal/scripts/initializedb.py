@@ -15,19 +15,9 @@ from ..models import (
     get_tm_session,
 )
 from ..models import Entry
-import faker
 
 
-fake = faker.Faker()
-
-ENTRIES = [{
-    "title": fake.catch_phrase(),
-    "body": fake.paragraph(),
-    "creation_date": fake.date_object()
-} for i in range(10)]
-
-
-ENTRIES += [
+ENTRIES = [
     {
         "title": "TESTING",
         "body": "Test body",
