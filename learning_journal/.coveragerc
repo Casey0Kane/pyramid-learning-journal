@@ -2,5 +2,5 @@
 source = learning_journal
 omit = 
     learning_journal/test*
-
-show_missing = True
+    learning_journal/__init__.py 
+    learning_journal/views/notfound.py
