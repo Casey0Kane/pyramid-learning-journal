@@ -208,12 +208,6 @@ def test_check_credentials_invalid():
     assert check_credentials('dagnabit', 'password') is False
 
 
-def test_home_view_get(dummy_request):
-    """Test login view returns empty dict for get request."""
-    from .views.default import home_view
-    assert home_view(dummy_request) == {}
-
-
 # Functional Tests #
 
 
