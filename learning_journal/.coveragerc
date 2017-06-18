@@ -1,0 +1,6 @@
+[run]
+source = learning_journal
+omit = 
+    learning_journal/test*
+    learning_journal/__init__.py 
+    learning_journal/views/notfound.py

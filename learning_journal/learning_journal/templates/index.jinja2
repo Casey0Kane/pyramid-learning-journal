@@ -1,0 +1,49 @@
+{% extends "layout.jinja2" %}
+{% macro lj_entry(entry) %}
+<div class="row">
+    {% if entry %}
+    <article>
+        <h6 class="date">{{ entry.creation_date.strftime("%b %d, %Y") }}{% if entry.edit_date %} (<em>edited: </em>{{ entry.edit_date.strftime("%b %d, %Y") }}){% endif %}</h6>
+        <section>
+            <a href="{{ request.route_url('detail', id=entry.id) }}"><h4>{{ entry.title }}</h4></a>
+        </section>
+    </article>
+    {% endif %}
+</div>
+{% endmacro %}}
+{% block title %}
+Today I learned...
+{% endblock %}
+{% block body %}
+{% if request.authenticated_userid %}
+    <div class="form container">
+        <div class="row">
+            <h5>Create new journal entry:</h5>
+            <form method="post" id="new_entry_form">
+                <input type="hidden" name="csrf_token" value="{{ request.session.get_csrf_token() }}">
+                <input class="title_input" type="text" name="title" placeholder="Title" required>
+                <input id="date" type="date" name="creation_date" value="{{ creation_date }}">
+                <textarea name="body" placeholder="What did I learn today?" required=""></textarea><br>
+                <input id="submit_button" type="submit" value="Submit">
+            </form>
+        </div>
+    </div>
+{% endif %}
+<div class="entries container">
+    <div class="latest">
+    {{ lj_entry(latest) }}
+    </div>
+    <div class="one-half column">
+        {% for entry in left_entries %}
+            {{ lj_entry(entry) }}
+        {% endfor %}
+    </div>
+    <div class="one-half column">
+        {% for entry in right_entries %}
+            {{ lj_entry(entry) }}
+        {% endfor %}
+    </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="{{ request.static_path('learning_journal:static/app.js') }}"></script>
+{% endblock body %}

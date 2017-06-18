@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Learning Journal{% endblock %}</title>
+    <meta name="description" content="Daily Learning Journal">
+    <meta name="author" content="Casey O'Kane">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script><script type="text/javascript"></script>
+    <link rel="stylesheet" type="text/css" href="{{ request.static_path('learning_journal:static/style.css') }}">
+</head>
+<body>
+    <div class="header container">
+        <div class="row">
+            <header>
+                <ul>
+                    <li><a href="{{ request.route_url('home') }}"><h3>Today I learned ...</h3></a></li>
+                    {% if request.authenticated_userid %}
+                        <li class='right'><a href="{{ request.route_url('logout') }}">logout</a></li>
+                    {% else %}
+                        <li class='right'><a href="{{ request.route_url('login') }}">login</a></li>
+                    {% endif %}
+                </ul>
+            </header>
+        </div>
+    </div>
+    {% block body %}{% endblock %}
+    {% block javascript %}{% endblock javascript %}
+</body>
+</html>
